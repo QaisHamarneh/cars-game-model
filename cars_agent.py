@@ -1,13 +1,11 @@
+import math
 import os
 import torch
 import random
 from collections import deque
-from model_2 import Linear_QNet, QTrainer
-from helper import plot
-
-MAX_MEMORY = 100_000
-BATCH_SIZE = 1000
-LR = 0.001
+from nn import Linear_QNet, QTrainer
+from ploting import plot
+from constants import *
 
 
 class CarAgent:
@@ -18,6 +16,7 @@ class CarAgent:
         self.player = player
         self.file_name = file_name
         self.record = 0
+        self.rewards = 0
         if not uniform:
             self.file_name = f"{self.file_name}_{self.player}.pth"
         self.n_games = 0
@@ -57,11 +56,11 @@ class CarAgent:
     def train_short_memory(self, state, action, reward, next_state, done):
         self.trainer.train_step(state, action, reward, next_state, done)
 
-    def get_action(self, state, eval=False):
+    def get_action(self, state, eval=False, rand=False):
         # random moves: tradeoff exploration / exploitation
-        self.epsilon = 250 - self.n_games
+        self.epsilon = EPS_END + (EPS_START - EPS_END) * math.exp(-1. * self.n_games / EPS_DECAY)
         final_move = [0] * self.n_actions
-        if not eval and random.randint(0, 500) < self.epsilon:
+        if rand or (not eval and random.random() < self.epsilon):
             move = random.randint(0, self.n_actions - 1)
             final_move[move] = 1
         else:
@@ -84,6 +83,7 @@ class CarAgent:
         reward, gameover, score = self.game.play_step(self.player, final_move)
         state_new = self.game.get_state(self.player)
 
+        self.rewards += reward
         # train short memory
         self.train_short_memory(
             state_old, final_move, reward, state_new, gameover)
@@ -97,20 +97,21 @@ class CarAgent:
             self.n_games += 1
             self.train_long_memory()
 
-            if score > self.record:
-                self.record = score
+            if self.rewards > self.record:
+                self.record = self.rewards
                 print(f"Game {self.n_games}: player {self.player} record {self.record}")
                 self.model.save(file_name=self.file_name)
+            self.rewards = 0
 
         return gameover
 
 
-    def eval(self):        
+    def eval(self, rand=False):        
         # get old state
         state_old = self.game.get_state(self.player)
 
         # get move
-        final_move = self.get_action(state_old, eval=True)
+        final_move = self.get_action(state_old, eval=True, rand=rand)
 
         # perform move and get new state
         _, gameover, score = self.game.play_step(self.player, final_move)

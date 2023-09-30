@@ -3,10 +3,9 @@ import torch
 import random
 import numpy as np
 from collections import deque
-# from snake_game_ai import SnakeGameAI, Direction, Point
-from model_2 import Linear_QNet, QTrainer
-from helper import plot
-from snake_game_ai_2 import SnakeGameAI2, Direction, Point
+from nn import Linear_QNet, QTrainer
+from ploting import plot
+from snake_game_ai_2 import SnakeGameAI2
 
 MAX_MEMORY = 100_000
 BATCH_SIZE = 1000
