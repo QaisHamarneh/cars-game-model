@@ -1,15 +1,15 @@
 import math
 import os
-import torch
 import random
 from collections import deque
-from nn import Linear_QNet, QTrainer
-from ploting import plot
+
+import torch
+
 from constants import *
+from learning_agent.nn import LinearQNet, QTrainer
 
 
 class CarAgent:
-
     def __init__(self, game, player, eval=False, file_name="model", uniform=False):
         self.game = game
         self.n_actions = game.n_actions
@@ -24,7 +24,7 @@ class CarAgent:
         self.gamma = 0.99  # discount rate
         self.state_size = len(game.get_state(player))
         self.memory = deque(maxlen=MAX_MEMORY)  # popleft()
-        self.model = Linear_QNet(
+        self.model = LinearQNet(
             self.player, self.state_size, 256, self.n_actions)
 
         if eval:
@@ -33,7 +33,7 @@ class CarAgent:
             self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
 
     def load_model(self):
-        model_folder_path = './models'
+        model_folder_path = '../models'
         fn = os.path.join(model_folder_path, self.file_name)
         self.model.load_state_dict(torch.load(fn))
 
@@ -71,7 +71,6 @@ class CarAgent:
 
         return final_move
 
-
     def train(self):
         # get old state
         state_old = self.game.get_state(self.player)
@@ -96,17 +95,17 @@ class CarAgent:
             # train long memory, plot result
             self.n_games += 1
             self.train_long_memory()
+            print(f"Game {self.n_games}: player {self.player} score {score}")
 
-            if self.rewards > self.record:
-                self.record = self.rewards
+            if score > self.record:
+                self.record = score
                 print(f"Game {self.n_games}: player {self.player} record {self.record}")
                 self.model.save(file_name=self.file_name)
             self.rewards = 0
 
         return gameover
 
-
-    def eval(self, rand=False):        
+    def eval(self, rand=False):
         # get old state
         state_old = self.game.get_state(self.player)
 
@@ -116,6 +115,4 @@ class CarAgent:
         # perform move and get new state
         _, gameover, score = self.game.play_step(self.player, final_move)
 
-
         return gameover, score
-

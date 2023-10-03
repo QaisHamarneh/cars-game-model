@@ -161,8 +161,9 @@ def eval(episodes, players=2, file_name=None, uniform=False):
 
 
 if __name__ == '__main__':
-    fn = "m10"
+    # Works for up to 4 players
+    fn = "m13"
     # print("\n\n\n\nTraining")
-    # train(10000, players=3, file_name=fn)
+    # train(1000, players=6, file_name=fn)
     print("\n\n\n\nEvaluating")
-    eval(5, players=3, file_name=fn)
+    eval(5, players=4, file_name=fn)
