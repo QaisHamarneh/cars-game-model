@@ -6,15 +6,15 @@ from constants import *
 
 @dataclass
 class Point:
-    x: int
-    y: int
+    x: float
+    y: float
 
 
 class Direction(Enum):
     RIGHT = 1
-    LEFT = 2
-    UP = 3
-    DOWN = 4
+    DOWN = 2
+    LEFT = 3
+    UP = 4
 
 
 class Problem(Enum):
@@ -43,32 +43,40 @@ horiz_direction = {Direction.RIGHT: True,
                    Direction.DOWN: False
                    }
 
+right_direction = {Direction.RIGHT: True,
+                   Direction.LEFT: False,
+                   Direction.UP: False,
+                   Direction.DOWN: True
+                   }
+
+clock_wise = [Direction.RIGHT, Direction.DOWN, Direction.LEFT, Direction.UP]
 
 class Road:
     def __init__(self,
                  name: str,
                  horizontal: bool,
-                 top: int,
-                 left: int,
-                 right: int) -> None:
+                 top: float,
+                 right: int,
+                 left: int) -> None:
         self.name = name
         self.horizontal = horizontal
         self.top = top
 
-        self.left_lanes = [Lane(self, i, Direction.LEFT if self.horizontal else Direction.UP,
-                                self.top + i * BLOCK_SIZE + i * LANE_DISPLACEMENT)
-                           for i in range(left)]
-
         self.right_lanes = [Lane(self, i, Direction.RIGHT if self.horizontal else Direction.DOWN,
-                                 self.top + i * BLOCK_SIZE + i * LANE_DISPLACEMENT +
-                                 left * BLOCK_SIZE + left * LANE_DISPLACEMENT)
+                                 self.top + i * BLOCK_SIZE + i * LANE_DISPLACEMENT)
                             for i in range(right)]
 
         # Below the last left lane
-        self.half = self.top + left * BLOCK_SIZE + (left - 1) * LANE_DISPLACEMENT
+        self.half = self.top + right * BLOCK_SIZE + (right - 1) * LANE_DISPLACEMENT
+
+        self.left_lanes = [Lane(self, i, Direction.LEFT if self.horizontal else Direction.UP,
+                                self.top + i * BLOCK_SIZE + i * LANE_DISPLACEMENT +
+                                right * BLOCK_SIZE + right * LANE_DISPLACEMENT)
+                           for i in range(left)]
+
         # Below the last right lane
-        self.bottom = self.top + (left + right) * BLOCK_SIZE + (
-                left + right - 1) * LANE_DISPLACEMENT
+        self.bottom = self.top + (right + left) * BLOCK_SIZE + (
+                right + left - 1) * LANE_DISPLACEMENT
 
 
 class Lane:
@@ -76,7 +84,7 @@ class Lane:
                  road: Road,
                  num: int,
                  direction: Direction,
-                 top: int) -> None:
+                 top: float) -> None:
         self.road = road
         self.num = num
         self.top = top
@@ -87,8 +95,8 @@ class Lane:
 class LaneSegment:
     def __init__(self,
                  lane: Lane,
-                 begin: int,
-                 end: int) -> None:
+                 begin: float,
+                 end: float) -> None:
         self.lane = lane
         self.begin = begin
         self.end = end
@@ -97,7 +105,7 @@ class LaneSegment:
         self.num = None
 
     def __str__(self):
-        return f"{self.lane.road.name}:{self.lane.num}"
+        return f"{self.lane.road.name}:{self.lane.direction.name}:{self.lane.num}"
 
 
 class CrossingSegment:
@@ -106,29 +114,33 @@ class CrossingSegment:
                  vert_lane: Lane) -> None:
         self.horiz_lane = horiz_lane
         self.vert_lane = vert_lane
-        self.right: LaneSegment | CrossingSegment = None
-        self.left: LaneSegment | CrossingSegment = None
-        self.up: LaneSegment | CrossingSegment = None
-        self.down: LaneSegment | CrossingSegment = None
+        self.connected_segments: dict[Direction, LaneSegment | CrossingSegment] = {Direction.RIGHT: None,
+                                                                                   Direction.LEFT: None,
+                                                                                   Direction.UP: None,
+                                                                                   Direction.DOWN: None}
         self.length = BLOCK_SIZE
         self.horiz_num = None
         self.vert_num = None
 
     def get_road(self, direction: Direction, opposite: bool = False):
-        if direction == Direction.RIGHT or Direction.LEFT and not opposite:
+        if horiz_direction[direction] and not opposite:
             return self.horiz_lane.road
         else:
-            return self.horiz_lane.road
+            return self.vert_lane.road
 
     def __str__(self):
-        return f"({self.horiz_lane.road.name}:{self.horiz_lane.num}, {self.vert_lane.road.name}:{self.vert_lane.num})"
+        return f"({self.horiz_lane.road.name}:{self.horiz_lane.direction.name}:{self.horiz_lane.num}, " \
+               f"{self.vert_lane.road.name}:{self.vert_lane.direction.name}:{self.vert_lane.num})"
 
 
 class Goal:
-    def __init__(self, lane_segment: LaneSegment, loc: int, color: Color) -> None:
+    def __init__(self, lane_segment: LaneSegment, color: Color) -> None:
         self.lane_segment = lane_segment
-        self.loc = loc
         self.color = color
+        self.update_position()
 
-        self.pos = Point(self.loc, self.lane_segment.lane.top) if self.lane_segment.lane.road.horizontal \
-            else Point(self.lane_segment.lane.top, self.loc)
+    def update_position(self):
+        mid_seg = (self.lane_segment.begin + self.lane_segment.end) // 2
+        self.pos = Point(mid_seg, self.lane_segment.lane.top) \
+            if self.lane_segment.lane.road.horizontal \
+            else Point(self.lane_segment.lane.top, mid_seg)

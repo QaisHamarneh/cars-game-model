@@ -1,14 +1,17 @@
+from astar_testing import astar
 from constants import *
 from game_model.cars_game import CarsGame
+from game_model.helper_functions import create_segments
 from game_model.road_network import Road
 from gui.pyglet_class import CarsWindow
+from gui.pyglet_class_test import CarsWindowTest
 from learning_agent.cars_agent import CarAgent
 
 if __name__ == '__main__':
-    road_top = Road("top", True, 0, 0, 1)
-    road_bottom = Road("bottom", True, WINDOW_SIZE - BLOCK_SIZE, 1, 0)
-    road_left = Road("left", False, 0, 1, 0)
+    road_bottom = Road("bottom", True, 0, 1, 0)
     road_right = Road("right", False, WINDOW_SIZE - BLOCK_SIZE, 0, 1)
+    road_top = Road("top", True, WINDOW_SIZE - BLOCK_SIZE, 0, 1)
+    road_left = Road("left", False, 0, 1, 0)
 
     road_1 = Road("r1", True, 150, 3, 3)
     road_2 = Road("r2", True, 500, 3, 3)
@@ -18,6 +21,13 @@ if __name__ == '__main__':
     roads = [road_top, road_bottom, road_left, road_right, road_1, road_2, road_3, road_4]
     players = 1
 
-    game = CarsGame(players=players, roads=roads)
-    agents = [CarAgent(game=game, player=i, file_name="") for i in range(players)]
-    CarsWindow(game, agents, 5, manual=True)
+    segments = create_segments(roads)
+    path = astar(segments, road_bottom.right_lanes[0].segments[0], road_4.right_lanes[1].segments[15])
+    print(f"Shortest path:")
+    for seg in path:
+        print(seg)
+    CarsWindowTest(roads)
+    # quit()
+    # game = CarsGame(players=players, roads=roads)
+    # agents = [CarAgent(game=game, player=i, file_name="") for i in range(players)]
+    # CarsWindow(game, agents, 5, manual=True)
