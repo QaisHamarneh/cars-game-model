@@ -3,18 +3,19 @@ from pygame import Color
 
 from constants import *
 from game_model.road_network import LaneSegment, true_direction, Problem, CrossingSegment, Direction, Point, Road, \
-    horiz_direction, right_direction
+    horiz_direction, right_direction, Segment
 
 
 class Car:
     def __init__(self,
                  name: str,
-                 loc: int,
+                 loc: float,
                  segment: LaneSegment,
-                 speed: int,
-                 size: int,
+                 speed: float,
+                 size: float,
                  color: Color,
-                 roads: list[Road]) -> None:
+                 roads: list[Road],
+                 max_speed: float) -> None:
         assert 0 <= loc <= segment.length, \
             f"Car {name}'s position is outside the window. WINDOW_SIZE = {WINDOW_SIZE}"
 
@@ -25,10 +26,17 @@ class Car:
         self.roads = roads
         self.dead = False
         self.direction = segment.lane.direction
-
-        self.res: list = [{"seg": segment, "dir": self.direction, "turn": False}]
         self.loc = loc
+        self.max_speed = max_speed
 
+        self.claim: list = []
+        self.res: list = [{"seg": segment,
+                           "dir": self.direction,
+                           "turn": False,
+                           "begin": self.loc,
+                           "end": (1 if true_direction[self.direction] else -1) * (self.loc + self.size + self.speed)}]
+
+        segment.cars.append(self)
         self.pos = Point(0, 0)
         self.w = 0
         self.h = 0
@@ -39,23 +47,45 @@ class Car:
 
         self.loc += (1 if true_direction[self.res[0]["dir"]] else -1) * self.speed
 
-        while abs(self.loc) + self.speed + self.size >= sum([seg["seg"].length for seg in self.res]):
+        while abs(self.loc) + self.size + self.speed ** 2 >= sum([seg["seg"].length for seg in self.res]):
             next_seg = self.get_next_segment()
             if next_seg is None:
+                print("Problem.NO_NEXT_SEGMENT")
                 return Problem.NO_NEXT_SEGMENT
-            self.res.append({"seg": next_seg, "dir": self.direction, "turn": False})
+            elif isinstance(next_seg, LaneSegment):
+                extra = np.sign(self.loc) * (
+                            abs(self.loc) + self.speed + self.size - sum([seg["seg"].length for seg in self.res]))
+                next_seg_info = {"seg": next_seg,
+                                 "dir": self.direction,
+                                 "turn": False,
+                                 "begin": 0,
+                                 "end": extra}
+                self.res.append(next_seg_info)
+                next_seg.cars.append(self)
+            else:
+                next_seg_info = {"seg": next_seg,
+                                 "dir": self.direction,
+                                 "turn": False,
+                                 "begin": 0,
+                                 "end": BLOCK_SIZE}
+                self.res.append(next_seg_info)
+                next_seg.cars.append(self)
 
         while abs(self.loc) > self.res[0]["seg"].length:
             self.loc = np.sign(self.loc) * (abs(self.loc) - self.res[0]["seg"].length)
-            self.res.pop(0)
+            seg_info = self.res.pop(0)
+            seg_info["seg"].cars.remove(self)
         if self.res[0]["turn"]:
             self.loc = 0
             self.res[0]["turn"] = False
 
+        if isinstance(self.res[0]["seg"], LaneSegment):
+            self.res[0]["begin"] = self.loc
+
         self._update_position()
         return True
 
-    def get_next_segment(self, direction=None) -> LaneSegment | CrossingSegment:
+    def get_next_segment(self, direction=None) -> Segment:
         if direction is None:
             direction = self.direction
 
@@ -73,11 +103,7 @@ class Car:
             return True
 
     def change_speed(self, speed_diff):
-        if self.speed == 0 and speed_diff < 0:
-            return Problem.SLOWER_WHILE_0
-        if self.speed == MAX_SPEED and speed_diff > 0:
-            return Problem.FASTER_WHILE_MAX
-        self.speed += speed_diff
+        self.speed = max(min(self.speed + speed_diff, self.max_speed), 0)
         return True
 
     def get_adjacent_lane_segment(self, lane_segment: LaneSegment, lane_diff) -> LaneSegment:
@@ -92,10 +118,15 @@ class Car:
 
     def change_lane(self, lane_diff):
         segment = self.res[0]["seg"]
-        if isinstance(segment, LaneSegment):
+        if len(self.res) == 1 and isinstance(segment, LaneSegment):
             next_lane_seg = self.get_adjacent_lane_segment(segment, lane_diff)
             if next_lane_seg is not None:
-                self.res.append({"seg": next_lane_seg, "dir": self.direction})
+                next_seg = {"seg": next_lane_seg,
+                            "dir": next_lane_seg.lane.direction,
+                            "turn": False,
+                            "begin": self.res[0]["begin"],
+                            "end": self.res[0]["end"]}
+                self.res[0] = next_seg
                 self._update_position()
                 return True
         return Problem.NO_ADJACENT_LANE
@@ -123,3 +154,9 @@ class Car:
             self.pos.y = seg_begin + self.loc - (0 if true_direction[direction] else self.size)
             self.w = BLOCK_SIZE
             self.h = self.size
+
+    def get_center(self):
+        if horiz_direction[self.res[0]["dir"]]:
+            return Point(self.pos.x + self.size / 2, self.pos.y + BLOCK_SIZE / 2)
+        else:
+            return Point(self.pos.x + BLOCK_SIZE / 2, self.pos.y + self.size / 2)

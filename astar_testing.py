@@ -2,10 +2,10 @@ import heapq
 
 from constants import BLOCK_SIZE
 from game_model.helper_functions import dist
-from game_model.road_network import Road, LaneSegment, CrossingSegment, Point
+from game_model.road_network import Road, LaneSegment, CrossingSegment, Point, Segment
 
 
-def astar_heuristic(current_seg: LaneSegment | CrossingSegment, goal_seg: LaneSegment):
+def astar_heuristic(current_seg: Segment, goal_seg: LaneSegment):
     midlane = BLOCK_SIZE // 2
     match current_seg:
         case LaneSegment():
@@ -32,7 +32,7 @@ def astar_heuristic(current_seg: LaneSegment | CrossingSegment, goal_seg: LaneSe
                             Point(goal_seg.lane.top, goal_seg.begin))
 
 
-def astar(segments: list[Road], start_seg: LaneSegment | CrossingSegment, goal_seg: LaneSegment):
+def astar(segments: list[Road], start_seg: Segment, goal_seg: LaneSegment):
     # Initialize the open list with the start node and a cost of 0
     open_list = [(0, start_seg)]
     # Initialize the came_from dictionary to track the path

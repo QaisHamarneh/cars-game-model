@@ -24,6 +24,13 @@ def overlap(p1, w1, h1, p2, w2, h2):
     return True
 
 
+def reached_goal(car: Car, goal: Goal):
+    if car.res[0]["seg"] == goal.lane_segment:
+        if dist(car.get_center(), goal.pos) < car.size / 2 + BLOCK_SIZE / 2:
+            return True
+    return False
+
+
 def create_random_car(roads: list[Road], cars) -> Car:
     name = random.choice([char for char in string.ascii_uppercase if not any([car.name == char for car in cars])])
     color = random.choice([color for color in COLORS if not any([car.color == color for car in cars])])
@@ -37,7 +44,8 @@ def create_random_car(roads: list[Road], cars) -> Car:
     # speed = random.randint(BLOCK_SIZE // 2, MAX_SPEED)
     speed = random.randint(3, 6)
     speed = max(0.2, random.random()) * speed
-    size = random.randint(BLOCK_SIZE // 2, 9 * BLOCK_SIZE // 10)
+    max_speed = speed + random.random() * speed
+    size = BLOCK_SIZE // 2 + random.random() * BLOCK_SIZE
     loc = 0
 
     return Car(name=name,
@@ -46,7 +54,8 @@ def create_random_car(roads: list[Road], cars) -> Car:
                speed=speed,
                size=size,
                color=color,
-               roads=roads)
+               roads=roads,
+               max_speed=max_speed)
 
 
 def create_segments(roads: list[Road]):

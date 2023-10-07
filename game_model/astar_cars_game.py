@@ -4,7 +4,7 @@ import numpy as np
 
 from game_model.car import Car
 from game_model.road_network import Goal, Road, Direction, Point, CrossingSegment, LaneSegment, Problem, clock_wise
-from game_model.helper_functions import create_random_car, overlap, create_segments, dist
+from game_model.helper_functions import create_random_car, overlap, create_segments, dist, reached_goal
 from constants import *
 
 
@@ -48,13 +48,13 @@ class AstarCarsGame:
             self.goals[player].lane_segment = lane_segment
             self.goals[player].update_position()
 
-    def play_step(self, player, action):
+    def play_step(self, player, actions):
         self.useless_iterations[player] += 1
         car = self.cars[player]
         game_over = False
 
         # 1. Execute selected action
-        moved = self._move(player, action)  # update the head
+        moved = self._move(player, actions)  # update the head
 
         # 2. Check if the action was possible
         if isinstance(moved, Problem):
@@ -66,8 +66,9 @@ class AstarCarsGame:
             return game_over, self.scores[player]
 
         # 3. place new goal if the goal is reached
-        if overlap(self.cars[player].pos, self.cars[player].w, self.cars[player].h,
-                   self.goals[player].pos, BLOCK_SIZE, BLOCK_SIZE):
+        # if overlap(self.cars[player].pos, self.cars[player].w, self.cars[player].h,
+        #            self.goals[player].pos, BLOCK_SIZE, BLOCK_SIZE):
+        if reached_goal(car, self.goals[player]):
             self.scores[player] += 1
             self._place_goal(player)
             print(f"Player {player}: Score {self.scores[player]}")
@@ -81,12 +82,11 @@ class AstarCarsGame:
         # 7. return game over and score
         return game_over, self.scores[player]
 
-    def _move(self, player, action_ind):
+    def _move(self, player, actions):
         car = self.cars[player]
-
         idx = clock_wise.index(car.direction)
         action_worked = True
-        match action_ind:
+        match actions["turn"]:
             case 1:
                 match car.res[-1]["seg"]:
                     case LaneSegment():
@@ -115,14 +115,11 @@ class AstarCarsGame:
                         action_worked = car.turn(new_dir)
                         if not action_worked:
                             return action_worked
-            case 3:
-                action_worked = car.change_speed(-1)  # slow down
-                if not action_worked:
-                    return action_worked
-            case 4:
-                action_worked = car.change_speed(1)  # speed up
-                if not action_worked:
-                    return action_worked
+
+        action_worked = car.change_speed(actions["accelerate"])  # slow down
+        if not action_worked:
+            return action_worked
+
         action_worked = car.move()
         return action_worked
 

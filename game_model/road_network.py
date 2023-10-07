@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from enum import Enum
 from pygame import Color
 from constants import *
+from abc import ABC
 
 
 @dataclass
@@ -51,6 +52,7 @@ right_direction = {Direction.RIGHT: True,
 
 clock_wise = [Direction.RIGHT, Direction.DOWN, Direction.LEFT, Direction.UP]
 
+
 class Road:
     def __init__(self,
                  name: str,
@@ -92,11 +94,15 @@ class Lane:
         self.segments = []
 
 
-class LaneSegment:
-    def __init__(self,
-                 lane: Lane,
-                 begin: float,
-                 end: float) -> None:
+class Segment(ABC):
+    def __init__(self) -> None:
+        self.length = 0
+        self.cars = []
+
+
+class LaneSegment(Segment):
+    def __init__(self, lane: Lane, begin: float, end: float) -> None:
+        super().__init__()
         self.lane = lane
         self.begin = begin
         self.end = end
@@ -108,16 +114,15 @@ class LaneSegment:
         return f"{self.lane.road.name}:{self.lane.direction.name}:{self.lane.num}"
 
 
-class CrossingSegment:
-    def __init__(self,
-                 horiz_lane: Lane,
-                 vert_lane: Lane) -> None:
+class CrossingSegment(Segment):
+    def __init__(self, horiz_lane: Lane, vert_lane: Lane) -> None:
+        super().__init__()
         self.horiz_lane = horiz_lane
         self.vert_lane = vert_lane
-        self.connected_segments: dict[Direction, LaneSegment | CrossingSegment] = {Direction.RIGHT: None,
-                                                                                   Direction.LEFT: None,
-                                                                                   Direction.UP: None,
-                                                                                   Direction.DOWN: None}
+        self.connected_segments: dict[Direction, Segment] = {Direction.RIGHT: None,
+                                                             Direction.LEFT: None,
+                                                             Direction.UP: None,
+                                                             Direction.DOWN: None}
         self.length = BLOCK_SIZE
         self.horiz_num = None
         self.vert_num = None
@@ -140,7 +145,7 @@ class Goal:
         self.update_position()
 
     def update_position(self):
-        mid_seg = (self.lane_segment.begin + self.lane_segment.end) // 2
-        self.pos = Point(mid_seg, self.lane_segment.lane.top) \
+        mid_seg = (self.lane_segment.begin + self.lane_segment.end) / 2
+        self.pos = Point(mid_seg, self.lane_segment.lane.top + BLOCK_SIZE / 2) \
             if self.lane_segment.lane.road.horizontal \
-            else Point(self.lane_segment.lane.top, mid_seg)
+            else Point(self.lane_segment.lane.top + BLOCK_SIZE / 2, mid_seg)

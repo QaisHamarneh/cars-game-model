@@ -2,7 +2,7 @@ import pyglet
 from pyglet import shapes
 
 from constants import *
-from game_model.road_network import Direction, Point, direction_axis, LaneSegment, horiz_direction
+from game_model.road_network import Direction, Point
 
 
 def _draw_dash_line(start, end, width=LANE_DISPLACEMENT, color=WHITE, dash=20):
@@ -167,14 +167,34 @@ class AstarCarsWindow(pyglet.window.Window):
     def _update_cars(self):
         self.car_shapes = []
         for player, car in enumerate(self.game.cars):
-            # direction = direction_axis[car.direction]
-            # pos = self.old_positions[player]
             self.car_shapes.append(shapes.Rectangle(
                 x=car.pos.x, y=car.pos.y,
-                # x=int(pos.x + direction[0] * (self.frames_count * car.speed) / FRAME_RATE),
-                # y=int(pos.y + direction[1] * (self.frames_count * car.speed) / FRAME_RATE),
                 width=car.w, height=car.h,
                 color=car.color if not car.dead else DEAD_GREY))
+            if car.res[0]["dir"] == Direction.RIGHT:
+                self.car_shapes.append(shapes.Triangle(car.pos.x + car.size, car.pos.y,
+                                                       car.pos.x + car.size, car.pos.y + BLOCK_SIZE,
+                                                       car.pos.x + car.size + BLOCK_SIZE / 2,
+                                                       car.pos.y + BLOCK_SIZE / 2,
+                                                       car.color))
+            elif car.res[0]["dir"] == Direction.LEFT:
+                self.car_shapes.append(shapes.Triangle(car.pos.x, car.pos.y,
+                                                       car.pos.x, car.pos.y + BLOCK_SIZE,
+                                                       car.pos.x - BLOCK_SIZE / 2,
+                                                       car.pos.y + BLOCK_SIZE / 2,
+                                                       car.color))
+            if car.res[0]["dir"] == Direction.UP:
+                self.car_shapes.append(shapes.Triangle(car.pos.x, car.pos.y + car.size,
+                                                       car.pos.x + BLOCK_SIZE, car.pos.y + car.size,
+                                                       car.pos.x + BLOCK_SIZE / 2,
+                                                       car.pos.y + car.size + BLOCK_SIZE / 2,
+                                                       car.color))
+            if car.res[0]["dir"] == Direction.DOWN:
+                self.car_shapes.append(shapes.Triangle(car.pos.x, car.pos.y,
+                                                       car.pos.x + BLOCK_SIZE, car.pos.y,
+                                                       car.pos.x + BLOCK_SIZE / 2,
+                                                       car.pos.y - BLOCK_SIZE / 2,
+                                                       car.color))
             # self.car_shapes.append(*self._draw_dash_line(car.color,
             #                         Point(lane.top + BLOCK_SIZE, 0),
             #                         Point(lane.top + BLOCK_SIZE, WINDOW_SIZE),
@@ -183,8 +203,11 @@ class AstarCarsWindow(pyglet.window.Window):
     def _update_goals(self):
         self.goal_shapes = []
         for goal in self.game.goals:
-            self.goal_shapes.append(shapes.Rectangle(x=goal.pos.x, y=goal.pos.y, width=BLOCK_SIZE, height=BLOCK_SIZE,
-                                                     color=goal.color))
+            self.goal_shapes.append(shapes.Circle(goal.pos.x, goal.pos.y, BLOCK_SIZE / 2, color=goal.color))
+            self.goal_shapes.append(shapes.Circle(goal.pos.x, goal.pos.y, BLOCK_SIZE / 3, color=ROAD_BLUE))
+            self.goal_shapes.append(shapes.Circle(goal.pos.x, goal.pos.y, BLOCK_SIZE / 4, color=goal.color))
+            # self.goal_shapes.append(shapes.Rectangle(x=goal.pos.x, y=goal.pos.y, width=BLOCK_SIZE, height=BLOCK_SIZE,
+            #                                          color=goal.color))
 
     def _draw_road(self, road):
         if road.horizontal:

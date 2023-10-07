@@ -1,9 +1,9 @@
 from constants import *
 from game_model.helper_functions import dist
-from game_model.road_network import LaneSegment, CrossingSegment, Point
+from game_model.road_network import LaneSegment, CrossingSegment, Point, Segment
 
 
-def astar_heuristic(current_seg: LaneSegment | CrossingSegment, goal_seg: LaneSegment):
+def astar_heuristic(current_seg: Segment, goal_seg: LaneSegment):
     mid_lane = BLOCK_SIZE // 2
     match current_seg:
         case LaneSegment():
@@ -30,9 +30,9 @@ def astar_heuristic(current_seg: LaneSegment | CrossingSegment, goal_seg: LaneSe
                             Point(goal_seg.lane.top, goal_seg.begin))
 
 
-def reconstruct_path(came_from: dict[LaneSegment | CrossingSegment, LaneSegment | CrossingSegment],
-                     current: LaneSegment) -> list[LaneSegment | CrossingSegment]:
-    path: list[LaneSegment | CrossingSegment] = [current]
+def reconstruct_path(came_from: dict[Segment, Segment],
+                     current: LaneSegment) -> list[Segment]:
+    path: list[Segment] = [current]
     while current in came_from:
         current = came_from[current]
         path.insert(0, current)

@@ -1,6 +1,6 @@
 from controller.helper_functions import astar_heuristic, reconstruct_path
 from game_model.astar_cars_game import AstarCarsGame
-from game_model.road_network import LaneSegment, CrossingSegment
+from game_model.road_network import LaneSegment, CrossingSegment, Segment
 
 
 class AstarCarController:
@@ -12,9 +12,8 @@ class AstarCarController:
         self.goal = self.game.goals[player]
 
     def get_action(self) -> int:
-        if isinstance(self.car.res[-1]["seg"], LaneSegment):
-            return 0
-        else:
+        actions = {"turn": 0, "accelerate": 1}
+        if isinstance(self.car.res[-1]["seg"], CrossingSegment):
             next_segment = self.astar()
             next_direction = self.car.direction
             for direction, segment in self.car.res[-1]["seg"].connected_segments.items():
@@ -23,16 +22,17 @@ class AstarCarController:
             dir_diff = (next_direction.value - self.car.res[-1]["dir"].value) % 4
             if dir_diff == 3:
                 dir_diff = 2
+            actions["turn"] = dir_diff
 
-            return dir_diff
+        return actions
 
-    def astar(self) -> LaneSegment | CrossingSegment:
+    def astar(self) -> Segment:
         start_seg = self.car.res[-1]["seg"]
         goal_seg = self.goal.lane_segment
         # Initialize the open list with the start node and a cost of 0
         open_list = [(0, start_seg)]
         # Initialize the came_from dictionary to track the path
-        came_from: dict[LaneSegment | CrossingSegment, LaneSegment | CrossingSegment] = {}
+        came_from: dict[Segment, Segment] = {}
         # Initialize the g_score dictionary to store the cost from start to each node
         g_score = {node: float('inf') for node in self.game.segments}
         g_score[start_seg] = 0
@@ -65,4 +65,3 @@ class AstarCarController:
                     open_list.append((f_score[neighbor], neighbor))
 
         return None  # No path found
-

@@ -18,7 +18,7 @@ def main(players, roads, eval=5, manual=False):
 if __name__ == '__main__':
     fn = "cars_model_10"
 
-    players = 6
+    players = 5
 
     road_bottom = Road("bottom", True, 0, 1, 0)
     road_right = Road("right", False, WINDOW_SIZE - BLOCK_SIZE, 0, 1)
