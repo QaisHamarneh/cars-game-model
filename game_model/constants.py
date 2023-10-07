@@ -1,13 +1,4 @@
-# Learning Agent
-MAX_MEMORY = 100_000
-BATCH_SIZE = 1000
-LR = 0.001
-
-EPS_START = 0.9
-EPS_END = 0.05
-EPS_DECAY = 1000
-
-# Size 
+# Size
 BLOCK_SIZE = 30
 LANE_DISPLACEMENT = 2
 WINDOW_SIZE = 900
@@ -16,7 +7,6 @@ MAX_SPEED = BLOCK_SIZE
 # GUI Only
 FRAME_RATE = 120
 
-# RGB Colors
 COLORS = [(153, 0, 0), (255, 102, 102), (255, 128, 0),
           (255, 255, 0), (102, 204, 0), (0, 255, 255),
           (127, 0, 255), (255, 0, 255), (224, 224, 224)]

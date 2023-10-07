@@ -1,11 +1,7 @@
-from astar_testing import astar
-from constants import *
-from game_model.cars_game import CarsGame
+from game_model.constants import *
 from game_model.helper_functions import create_segments
 from game_model.road_network import Road
-from gui.pyglet_class import CarsWindow
 from gui.pyglet_class_test import CarsWindowTest
-from learning_agent.cars_agent import CarAgent
 
 if __name__ == '__main__':
     road_bottom = Road("bottom", True, 0, 1, 0)
@@ -22,12 +18,4 @@ if __name__ == '__main__':
     players = 1
 
     segments = create_segments(roads)
-    path = astar(segments, road_bottom.right_lanes[0].segments[0], road_4.right_lanes[1].segments[15])
-    print(f"Shortest path:")
-    for seg in path:
-        print(seg)
     CarsWindowTest(roads)
-    # quit()
-    # game = CarsGame(players=players, roads=roads)
-    # agents = [CarAgent(game=game, player=i, file_name="") for i in range(players)]
-    # CarsWindow(game, agents, 5, manual=True)

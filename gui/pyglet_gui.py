@@ -1,7 +1,7 @@
 import pyglet
 from pyglet import shapes
 
-from constants import *
+from game_model.constants import *
 from game_model.road_network import Direction, Point
 
 
@@ -72,7 +72,7 @@ def _draw_arrow(begin, end, horizontal, direction, tip=BLOCK_SIZE / 4, width=LAN
     return lines
 
 
-class AstarCarsWindow(pyglet.window.Window):
+class CarsWindow(pyglet.window.Window):
     def __init__(self, game, controllers, eval_games, manual=False):
         super().__init__()
         self.set_size(WINDOW_SIZE, WINDOW_SIZE)
@@ -176,25 +176,25 @@ class AstarCarsWindow(pyglet.window.Window):
                                                        car.pos.x + car.size, car.pos.y + BLOCK_SIZE,
                                                        car.pos.x + car.size + BLOCK_SIZE / 2,
                                                        car.pos.y + BLOCK_SIZE / 2,
-                                                       car.color))
+                                                       car.color if not car.dead else DEAD_GREY))
             elif car.res[0]["dir"] == Direction.LEFT:
                 self.car_shapes.append(shapes.Triangle(car.pos.x, car.pos.y,
                                                        car.pos.x, car.pos.y + BLOCK_SIZE,
                                                        car.pos.x - BLOCK_SIZE / 2,
                                                        car.pos.y + BLOCK_SIZE / 2,
-                                                       car.color))
+                                                       car.color if not car.dead else DEAD_GREY))
             if car.res[0]["dir"] == Direction.UP:
                 self.car_shapes.append(shapes.Triangle(car.pos.x, car.pos.y + car.size,
                                                        car.pos.x + BLOCK_SIZE, car.pos.y + car.size,
                                                        car.pos.x + BLOCK_SIZE / 2,
                                                        car.pos.y + car.size + BLOCK_SIZE / 2,
-                                                       car.color))
+                                                       car.color if not car.dead else DEAD_GREY))
             if car.res[0]["dir"] == Direction.DOWN:
                 self.car_shapes.append(shapes.Triangle(car.pos.x, car.pos.y,
                                                        car.pos.x + BLOCK_SIZE, car.pos.y,
                                                        car.pos.x + BLOCK_SIZE / 2,
                                                        car.pos.y - BLOCK_SIZE / 2,
-                                                       car.color))
+                                                       car.color if not car.dead else DEAD_GREY))
             # self.car_shapes.append(*self._draw_dash_line(car.color,
             #                         Point(lane.top + BLOCK_SIZE, 0),
             #                         Point(lane.top + BLOCK_SIZE, WINDOW_SIZE),
@@ -206,8 +206,6 @@ class AstarCarsWindow(pyglet.window.Window):
             self.goal_shapes.append(shapes.Circle(goal.pos.x, goal.pos.y, BLOCK_SIZE / 2, color=goal.color))
             self.goal_shapes.append(shapes.Circle(goal.pos.x, goal.pos.y, BLOCK_SIZE / 3, color=ROAD_BLUE))
             self.goal_shapes.append(shapes.Circle(goal.pos.x, goal.pos.y, BLOCK_SIZE / 4, color=goal.color))
-            # self.goal_shapes.append(shapes.Rectangle(x=goal.pos.x, y=goal.pos.y, width=BLOCK_SIZE, height=BLOCK_SIZE,
-            #                                          color=goal.color))
 
     def _draw_road(self, road):
         if road.horizontal:

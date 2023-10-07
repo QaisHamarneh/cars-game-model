@@ -1,6 +1,6 @@
 from timed_automata.timed_automata_classes import TimedAutomata, State, Transition
 
-from game_model.astar_cars_game import AstarCarsGame
+from game_model.game_model import AstarCarsGame
 
 
 def collision_check(player: int, game: AstarCarsGame):

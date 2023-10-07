@@ -1,11 +1,9 @@
 import random
 
-import numpy as np
-
 from game_model.car import Car
-from game_model.road_network import Goal, Road, Direction, Point, CrossingSegment, LaneSegment, Problem, clock_wise
-from game_model.helper_functions import create_random_car, overlap, create_segments, dist, reached_goal
-from constants import *
+from game_model.road_network import Goal, Road, CrossingSegment, LaneSegment, Problem, clock_wise
+from game_model.helper_functions import create_random_car, overlap, create_segments, reached_goal
+from game_model.constants import *
 
 
 class AstarCarsGame:

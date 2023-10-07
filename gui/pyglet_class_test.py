@@ -1,9 +1,9 @@
 import pyglet
 from pyglet import shapes
 
-from constants import *
+from game_model.constants import *
 from game_model.helper_functions import create_segments
-from game_model.road_network import Direction, Point, direction_axis, LaneSegment, CrossingSegment
+from game_model.road_network import Direction, Point, LaneSegment, CrossingSegment
 
 
 class CarsWindowTest(pyglet.window.Window):

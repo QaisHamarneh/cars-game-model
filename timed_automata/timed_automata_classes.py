@@ -1,6 +1,6 @@
 from typing import Callable
 
-from game_model.astar_cars_game import AstarCarsGame
+from game_model.game_model import AstarCarsGame
 
 
 class State:

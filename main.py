@@ -1,41 +1,24 @@
-from constants import *
-from game_model.cars_game import CarsGame
+from game_model.constants import *
+from controller.astar_car_controller import AstarCarController
+from game_model.game_model import AstarCarsGame
 from game_model.road_network import Road
-from gui.pyglet_class import CarsWindow
-from learning_agent.cars_agent import CarAgent
+from gui.pyglet_gui import CarsWindow
 
 
-def main(file_name, players, roads, train=0, eval=5, rand=False, manual=False, render=False, fixed=True):
+def main(players, roads, eval=5, manual=False):
 
-    game = CarsGame(players=players, roads=roads, fixed=fixed)
-    agents = [CarAgent(game=game, player=i, file_name=file_name) for i in range(players)]
-
-    if train > 0:
-        print("\n\nTraining\n\n")
-        if render:
-            CarsWindow(game, agents, eval, train_games=train, manual=manual)
-            return None
-        for i in range(train):
-            gameover = [False] * players
-            while not all(gameover):
-                for player in range(players):
-                    if not gameover[player]:
-                        gameover[player] = agents[player].train()
-
-            game.reset()
+    game = AstarCarsGame(players=players, roads=roads)
+    controllers = [AstarCarController(game=game, player=i) for i in range(players)]
 
     if eval > 0:
-        if train == 0 and not rand:
-            for player in range(players):
-                agents[player].load_model()
         print("\n\nEvaluating\n\n")
-        CarsWindow(game, agents, eval, manual=manual)
+        CarsWindow(game, controllers, eval, manual=manual)
 
 
 if __name__ == '__main__':
     fn = "cars_model_10"
 
-    players = 1
+    players = 5
 
     road_bottom = Road("bottom", True, 0, 1, 0)
     road_right = Road("right", False, WINDOW_SIZE - BLOCK_SIZE, 0, 1)
@@ -49,12 +32,19 @@ if __name__ == '__main__':
 
     roads = [road_top, road_bottom, road_left, road_right, road_1, road_2, road_3, road_4]
 
-    main(file_name=fn,
-         players=players,
+    main(players=players,
          roads=roads,
-         train=1000,
          eval=5,
-         rand=False,
-         manual=False,
-         render=False,
-         fixed=True)
+         manual=False)
+
+    # road_1 = Road("r1", True, 150, 3, 0)
+    # road_2 = Road("r2", True, 500, 0, 3)
+    # road_3 = Road("r3", False, 150, 3, 0)
+    # road_4 = Road("r4", False, 500, 3, 3)
+    #
+    # roads = [road_1, road_2, road_3, road_4]
+    #
+    # main(players=players,
+    #      roads=roads,
+    #      eval=5,
+    #      manual=False)

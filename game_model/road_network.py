@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum
 from pygame import Color
-from constants import *
+from game_model.constants import *
 from abc import ABC
 
 

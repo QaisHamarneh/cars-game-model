@@ -1,8 +1,8 @@
 import numpy as np
 from pygame import Color
 
-from constants import *
-from game_model.road_network import LaneSegment, true_direction, Problem, CrossingSegment, Direction, Point, Road, \
+from game_model.constants import *
+from game_model.road_network import LaneSegment, true_direction, Problem, CrossingSegment, Point, Road, \
     horiz_direction, right_direction, Segment
 
 

@@ -1,4 +1,4 @@
-from constants import *
+from game_model.constants import *
 from game_model.helper_functions import dist
 from game_model.road_network import LaneSegment, CrossingSegment, Point, Segment
 

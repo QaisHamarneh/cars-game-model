@@ -1,5 +1,5 @@
 from controller.helper_functions import astar_heuristic, reconstruct_path
-from game_model.astar_cars_game import AstarCarsGame
+from game_model.game_model import AstarCarsGame
 from game_model.road_network import LaneSegment, CrossingSegment, Segment
 
 
