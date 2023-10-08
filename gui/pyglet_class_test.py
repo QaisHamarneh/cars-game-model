@@ -3,16 +3,21 @@ from pyglet import shapes
 
 from game_model.constants import *
 from game_model.helper_functions import create_segments
-from game_model.road_network import Direction, Point, LaneSegment, CrossingSegment
+from game_model.road_network import Direction, Point, LaneSegment, CrossingSegment, true_direction
+from gui.colors import colors
 
 
 class CarsWindowTest(pyglet.window.Window):
     def __init__(self, roads):
         super().__init__()
-        self.set_size(WINDOW_SIZE, WINDOW_SIZE)
-        self.set_minimum_size(WINDOW_SIZE, WINDOW_SIZE)
+        self.set_size(WINDOW_WIDTH, WINDOW_HEIGHT)
+        self.set_minimum_size(WINDOW_WIDTH, WINDOW_HEIGHT)
+        self.pos = Point(0, 0)
+        self.pos.x, self.pos.y = self.get_location()
+        self.set_location(self.pos.x - 300, self.pos.y - 200)
+
         self.roads = roads
-        self.background = shapes.Rectangle(x=0, y=0, width=WINDOW_SIZE, height=WINDOW_SIZE, color=PALE_GREEN)
+        self.background = shapes.Rectangle(x=0, y=0, width=WINDOW_WIDTH, height=WINDOW_HEIGHT, color=PALE_GREEN)
 
         create_segments(self.roads)
 
@@ -23,7 +28,7 @@ class CarsWindowTest(pyglet.window.Window):
 
         self.car = shapes.Rectangle(x=self.seg.vert_lane.top, y=self.seg.horiz_lane.top,
                                     width=BLOCK_SIZE, height=BLOCK_SIZE,
-                                    color=COLORS[0])
+                                    color=colors["red1"])
 
         for road in self.roads:
             self._draw_road(road)
@@ -41,10 +46,19 @@ class CarsWindowTest(pyglet.window.Window):
         self.car.draw()
 
     def _manual_update_game(self):
-        self.car.x = self.seg.vert_lane.top if isinstance(self.seg, CrossingSegment) \
-            else (self.seg.begin if self.seg.lane.road.horizontal else self.seg.lane.top)
-        self.car.y = self.seg.horiz_lane.top if isinstance(self.seg, CrossingSegment) \
-            else (self.seg.begin if not self.seg.lane.road.horizontal else self.seg.lane.top)
+        if isinstance(self.seg, CrossingSegment):
+            x = self.seg.vert_lane.top
+            y = self.seg.horiz_lane.top
+        else:
+            if self.seg.lane.road.horizontal:
+                x = self.seg.begin if true_direction[self.seg.lane.direction] else self.seg.begin - BLOCK_SIZE
+                y = self.seg.lane.top
+            else:
+                x = self.seg.lane.top
+                y = self.seg.begin if true_direction[self.seg.lane.direction] else self.seg.begin - BLOCK_SIZE
+
+        self.car.x = x
+        self.car.y = y
 
     def on_key_press(self, symbol, modifiers):
         if symbol == pyglet.window.key.RIGHT:
@@ -92,11 +106,11 @@ class CarsWindowTest(pyglet.window.Window):
 
     def _draw_road(self, road):
         if road.horizontal:
-            self.road_shapes.append(shapes.Rectangle(0, road.top, WINDOW_SIZE, road.bottom - road.top,
+            self.road_shapes.append(shapes.Rectangle(0, road.top, WINDOW_WIDTH, road.bottom - road.top,
                                                      color=ROAD_BLUE
                                                      ))
         else:
-            self.road_shapes.append(shapes.Rectangle(road.top, 0, road.bottom - road.top, WINDOW_SIZE,
+            self.road_shapes.append(shapes.Rectangle(road.top, 0, road.bottom - road.top, WINDOW_HEIGHT,
                                                      color=ROAD_BLUE
                                                      ))
 
@@ -105,23 +119,23 @@ class CarsWindowTest(pyglet.window.Window):
             if road.horizontal:
                 if i == len(road.right_lanes) - 1 and len(road.left_lanes) > 0:
                     self.road_shapes.append(shapes.Line(0, lane.top + BLOCK_SIZE,
-                                                        WINDOW_SIZE, lane.top + BLOCK_SIZE,
+                                                        WINDOW_WIDTH, lane.top + BLOCK_SIZE,
                                                         LANE_DISPLACEMENT, color=WHITE))
                 elif i < len(road.right_lanes + road.left_lanes) - 1:
                     self._draw_dash_line(WHITE,
                                          Point(0, lane.top + BLOCK_SIZE),
-                                         Point(WINDOW_SIZE, lane.top + BLOCK_SIZE),
+                                         Point(WINDOW_WIDTH, lane.top + BLOCK_SIZE),
                                          width=LANE_DISPLACEMENT)
             else:
                 if i == len(road.right_lanes) - 1 and len(road.left_lanes) > 0:
                     self.road_shapes.append(shapes.Line(lane.top + BLOCK_SIZE, 0,
                                                         lane.top + BLOCK_SIZE,
-                                                        WINDOW_SIZE, LANE_DISPLACEMENT,
+                                                        WINDOW_HEIGHT, LANE_DISPLACEMENT,
                                                         color=WHITE))
                 elif i < len(road.right_lanes + road.left_lanes) - 1:
                     self._draw_dash_line(WHITE,
                                          Point(lane.top + BLOCK_SIZE, 0),
-                                         Point(lane.top + BLOCK_SIZE, WINDOW_SIZE),
+                                         Point(lane.top + BLOCK_SIZE, WINDOW_HEIGHT),
                                          width=LANE_DISPLACEMENT)
 
     def _draw_dash_line(self, color1, start, end, width, dash=20):

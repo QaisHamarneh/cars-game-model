@@ -35,7 +35,8 @@ class Transition:
                  end: State,
                  reset: list[int],
                  time_guards: list[Callable[[list[int]], bool]] = None,
-                 game_guards: list[Callable[[AstarCarsGame, int], bool]] = None):
+                 game_guards: list[Callable[[AstarCarsGame, int], bool]] = None,
+                 updates: list[Callable[[dict[str, int]], None]] = None):
         self.player = player
         self.start = start
         self.end = end
@@ -46,6 +47,9 @@ class Transition:
         self.game_guards = []
         if game_guards is not None:
             self.game_guards = game_guards
+        self.updates = []
+        if updates is not None:
+            self.updates = updates
 
     def enabled(self, game: AstarCarsGame, clocks: list[int]):
         time_guards_enabled = all([guard(clocks) for guard in self.time_guards])
@@ -64,13 +68,15 @@ class TimedAutomata:
                  states: list[State],
                  start_state: State,
                  transitions: list[Transition],
-                 num_clocks: int):
+                 num_clocks: int,
+                 variables: dict[str, int]):
         self.player = player
         self.game = game
         self.states = states
         self.start_state = start_state
         self.transitions = transitions
-        self.clocks = [0.0] * num_clocks
+        self.variables = variables
+        self.clocks = [0] * num_clocks
 
         self.current_state = start_state
 

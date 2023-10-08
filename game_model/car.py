@@ -9,21 +9,17 @@ from game_model.road_network import LaneSegment, true_direction, Problem, Crossi
 class Car:
     def __init__(self,
                  name: str,
-                 loc: float,
+                 loc: int,
                  segment: LaneSegment,
-                 speed: float,
-                 size: float,
+                 speed: int,
+                 size: int,
                  color: Color,
-                 roads: list[Road],
-                 max_speed: float) -> None:
-        assert 0 <= loc <= segment.length, \
-            f"Car {name}'s position is outside the window. WINDOW_SIZE = {WINDOW_SIZE}"
+                 max_speed: int) -> None:
 
         self.name = name
         self.speed = speed
         self.size = size
         self.color = color
-        self.roads = roads
         self.dead = False
         self.direction = segment.lane.direction
         self.loc = loc
@@ -38,6 +34,7 @@ class Car:
 
         segment.cars.append(self)
         self.pos = Point(0, 0)
+        # For gui only
         self.w = 0
         self.h = 0
         self._update_position()
@@ -46,15 +43,20 @@ class Car:
         # Within the lane
 
         self.loc += (1 if true_direction[self.res[0]["dir"]] else -1) * self.speed
+        if isinstance(self.res[-1]["seg"], LaneSegment):
+            end = np.sign(self.loc) * (
+                    abs(self.loc) + self.get_braking_distance() -
+                    sum([self.res[i]["seg"].length for i in range(len(self.res) - 1)]))
+            self.res[-1]["end"] = min(self.res[-1]["seg"].length, end)
 
-        while abs(self.loc) + self.size + self.speed ** 2 >= sum([seg["seg"].length for seg in self.res]):
+        while abs(self.loc) + self.get_braking_distance() >= sum([seg["seg"].length for seg in self.res]):
             next_seg = self.get_next_segment()
             if next_seg is None:
                 print("Problem.NO_NEXT_SEGMENT")
                 return Problem.NO_NEXT_SEGMENT
             elif isinstance(next_seg, LaneSegment):
                 extra = np.sign(self.loc) * (
-                            abs(self.loc) + self.speed + self.size - sum([seg["seg"].length for seg in self.res]))
+                            abs(self.loc) + self.get_braking_distance() - sum([seg["seg"].length for seg in self.res]))
                 next_seg_info = {"seg": next_seg,
                                  "dir": self.direction,
                                  "turn": False,
@@ -67,7 +69,7 @@ class Car:
                                  "dir": self.direction,
                                  "turn": False,
                                  "begin": 0,
-                                 "end": BLOCK_SIZE}
+                                 "end": (1 if true_direction[self.direction] else -1) * BLOCK_SIZE}
                 self.res.append(next_seg_info)
                 next_seg.cars.append(self)
 
@@ -82,6 +84,10 @@ class Car:
         if isinstance(self.res[0]["seg"], LaneSegment):
             self.res[0]["begin"] = self.loc
 
+        # txt = f"loc: {self.loc} "
+        # for seg in self.res:
+        #     txt += f"seg: {seg['seg']} {seg['begin']}//{seg['end']} "
+        # print(txt)
         self._update_position()
         return True
 
@@ -106,7 +112,9 @@ class Car:
         self.speed = max(min(self.speed + speed_diff, self.max_speed), 0)
         return True
 
-    def get_adjacent_lane_segment(self, lane_segment: LaneSegment, lane_diff) -> LaneSegment:
+    def get_adjacent_lane_segment(self, lane_diff, lane_segment: LaneSegment = None) -> LaneSegment:
+        if lane_segment is None:
+            lane_segment = self.res[0]["seg"]
         actual_lane_diff = (-1 if right_direction[self.direction] else 1) * lane_diff
         num = lane_segment.lane.num
         lanes = lane_segment.lane.road.right_lanes if right_direction[self.direction] \
@@ -117,9 +125,9 @@ class Car:
         return None
 
     def change_lane(self, lane_diff):
-        segment = self.res[0]["seg"]
-        if len(self.res) == 1 and isinstance(segment, LaneSegment):
-            next_lane_seg = self.get_adjacent_lane_segment(segment, lane_diff)
+
+        if len(self.res) == 1 and isinstance(self.res[0]["seg"], LaneSegment):
+            next_lane_seg = self.get_adjacent_lane_segment(lane_diff)
             if next_lane_seg is not None:
                 next_seg = {"seg": next_lane_seg,
                             "dir": next_lane_seg.lane.direction,
@@ -145,18 +153,26 @@ class Car:
                 seg_begin = seg.vert_lane.top if true_direction[direction] else seg.vert_lane.top + BLOCK_SIZE
             self.pos.y = seg.lane.top if lane_seg else seg.horiz_lane.top
             self.pos.x = seg_begin + self.loc - (0 if true_direction[direction] else self.size)
-            self.w = self.size
+            # BLOCK_SIZE // 6 for the triangle
+            self.w = self.size - BLOCK_SIZE // 6
             self.h = BLOCK_SIZE
         else:
             if not lane_seg:
                 seg_begin = seg.horiz_lane.top if true_direction[direction] else seg.horiz_lane.top + BLOCK_SIZE
             self.pos.x = seg.lane.top if lane_seg else seg.vert_lane.top
             self.pos.y = seg_begin + self.loc - (0 if true_direction[direction] else self.size)
+            # BLOCK_SIZE // 6 for the triangle
             self.w = BLOCK_SIZE
-            self.h = self.size
+            self.h = self.size - BLOCK_SIZE // 6
 
     def get_center(self):
         if horiz_direction[self.res[0]["dir"]]:
-            return Point(self.pos.x + self.size / 2, self.pos.y + BLOCK_SIZE / 2)
+            return Point(self.pos.x + self.size // 2, self.pos.y + BLOCK_SIZE // 2)
         else:
-            return Point(self.pos.x + BLOCK_SIZE / 2, self.pos.y + self.size / 2)
+            return Point(self.pos.x + BLOCK_SIZE // 2, self.pos.y + self.size // 2)
+
+    def get_braking_distance(self):
+        # braking = self.speed * (self.speed + 1) // 2
+        braking = self.speed**2
+        # BLOCK_SIZE // 10 additional distance when speed = 0
+        return self.size + braking + BLOCK_SIZE // 10

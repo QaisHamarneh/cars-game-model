@@ -5,7 +5,8 @@ import numpy as np
 
 from game_model.constants import *
 from game_model.car import Car
-from game_model.road_network import Direction, Road, CrossingSegment, LaneSegment, true_direction, Goal
+from game_model.road_network import Direction, Road, CrossingSegment, LaneSegment, true_direction, Goal, Segment
+from gui.colors import colors
 
 
 def dist(p1, p2):
@@ -26,25 +27,23 @@ def overlap(p1, w1, h1, p2, w2, h2):
 
 def reached_goal(car: Car, goal: Goal):
     if car.res[0]["seg"] == goal.lane_segment:
-        if dist(car.get_center(), goal.pos) < car.size / 2 + BLOCK_SIZE / 2:
+        if dist(car.get_center(), goal.pos) < car.size // 2 + BLOCK_SIZE // 2:
             return True
     return False
 
 
-def create_random_car(roads: list[Road], cars) -> Car:
+def create_random_car(segments: list[Segment], cars) -> Car:
     name = random.choice([char for char in string.ascii_uppercase if not any([car.name == char for car in cars])])
-    color = random.choice([color for color in COLORS if not any([car.color == color for car in cars])])
+    color = random.choice([color for color in colors.values()
+                           if not any([car.color == color for car in cars])])
 
-    road = random.choice(roads)
-    lane = random.choice(road.right_lanes + road.left_lanes)
-    # lane_segment = random.choice([seg for seg in lane.segments
-    #                               if isinstance(seg, LaneSegment) and not any([car.res == seg for car in cars])])
-    lane_segment = random.choice([seg for seg in lane.segments if isinstance(seg, LaneSegment)])
+    lane_segment = random.choice([seg for seg in segments
+                                  if isinstance(seg, LaneSegment) and
+                                  not any([seg == car.res[0]["seg"] for car in cars])])
 
-    # speed = random.randint(BLOCK_SIZE // 2, MAX_SPEED)
-    speed = random.randint(3, 6)
-    speed = max(0.2, random.random()) * speed
-    max_speed = speed + random.random() * speed
+    max_speed = random.randint(BLOCK_SIZE // 4, BLOCK_SIZE // 3)
+    speed = random.randint(BLOCK_SIZE // 10, max_speed)
+
     size = BLOCK_SIZE // 2 + random.random() * BLOCK_SIZE
     loc = 0
 
@@ -54,7 +53,6 @@ def create_random_car(roads: list[Road], cars) -> Car:
                speed=speed,
                size=size,
                color=color,
-               roads=roads,
                max_speed=max_speed)
 
 

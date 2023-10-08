@@ -12,7 +12,9 @@ class AstarCarController:
         self.goal = self.game.goals[player]
 
     def get_action(self) -> int:
-        actions = {"turn": 0, "accelerate": 1}
+        dir_diff = 0
+        lane_change = 0
+        acceleration = self.get_accelerate(self.car.res)
         if isinstance(self.car.res[-1]["seg"], CrossingSegment):
             next_segment = self.astar()
             next_direction = self.car.direction
@@ -22,7 +24,41 @@ class AstarCarController:
             dir_diff = (next_direction.value - self.car.res[-1]["dir"].value) % 4
             if dir_diff == 3:
                 dir_diff = 2
-            actions["turn"] = dir_diff
+
+        if acceleration < 1 and len(self.car.res) == 1 and isinstance(self.car.res[0]["seg"], LaneSegment):
+            right_lane = self.car.get_adjacent_lane_segment(-1)
+            if right_lane is not None:
+                right_lane_acceleration = self.get_accelerate([{
+                    "seg": right_lane,
+                    "dir": self.car.direction,
+                    "turn": False,
+                    "begin": self.car.res[0]["begin"],
+                    "end": self.car.res[0]["end"]
+                }])
+                if right_lane_acceleration > acceleration:
+                    print(self.car.res[0]["seg"])
+                    print("Lane change to ")
+                    print(right_lane)
+                    lane_change = -1
+                    acceleration = right_lane_acceleration
+                else:
+                    left_lane = self.car.get_adjacent_lane_segment(1)
+                    if left_lane is not None:
+                        left_lane_acceleration = self.get_accelerate([{
+                            "seg": left_lane,
+                            "dir": self.car.direction,
+                            "turn": False,
+                            "begin": self.car.res[0]["begin"],
+                            "end": self.car.res[0]["end"]
+                        }])
+                        if left_lane_acceleration > acceleration:
+                            print(self.car.res[0]["seg"])
+                            print("Lane change to ")
+                            print(lane_change)
+                            lane_change = 1
+                            acceleration = left_lane_acceleration
+
+        actions = {"turn": dir_diff, "accelerate": acceleration, "lane-change": lane_change}
 
         return actions
 
@@ -65,3 +101,22 @@ class AstarCarController:
                     open_list.append((f_score[neighbor], neighbor))
 
         return None  # No path found
+
+    def get_accelerate(self, segments):
+        acceleration = 1
+        for car in segments[0]["seg"].cars:
+            if car.res[0]["seg"] == segments[-1]["seg"] and abs(car.loc) > abs(segments[-1]["begin"]) and car.speed > 0:
+                if abs(segments[-1]["end"]) + self.car.speed + 1 < abs(car.loc) + car.speed:
+                    acceleration = min(acceleration, 1)
+                elif abs(segments[-1]["end"]) + self.car.speed < abs(car.loc) + car.speed:
+                    acceleration = min(acceleration, 0)
+                else:
+                    acceleration = min(acceleration, -1)
+        if acceleration > -1:
+            if any([seg["seg"].max_speed < self.car.speed for seg in segments]):
+                acceleration = min(acceleration, -1)
+            elif abs(segments[-1]["end"]) + self.car.speed + acceleration > segments[-1]["seg"].length:
+                next_seg = self.car.get_next_segment()
+                if isinstance(next_seg, CrossingSegment) and len(next_seg.cars) > 0:
+                    acceleration = min(acceleration, -1)
+        return acceleration

@@ -7,8 +7,8 @@ from abc import ABC
 
 @dataclass
 class Point:
-    x: float
-    y: float
+    x: int
+    y: int
 
 
 class Direction(Enum):
@@ -57,7 +57,7 @@ class Road:
     def __init__(self,
                  name: str,
                  horizontal: bool,
-                 top: float,
+                 top: int,
                  right: int,
                  left: int) -> None:
         self.name = name
@@ -86,7 +86,7 @@ class Lane:
                  road: Road,
                  num: int,
                  direction: Direction,
-                 top: float) -> None:
+                 top: int) -> None:
         self.road = road
         self.num = num
         self.top = top
@@ -98,10 +98,11 @@ class Segment(ABC):
     def __init__(self) -> None:
         self.length = 0
         self.cars = []
+        self.max_speed = 0
 
 
 class LaneSegment(Segment):
-    def __init__(self, lane: Lane, begin: float, end: float) -> None:
+    def __init__(self, lane: Lane, begin: int, end: int) -> None:
         super().__init__()
         self.lane = lane
         self.begin = begin
@@ -109,6 +110,7 @@ class LaneSegment(Segment):
         self.end_crossing = None
         self.length = abs(self.end - self.begin)
         self.num = None
+        self.max_speed = BLOCK_SIZE // 3
 
     def __str__(self):
         return f"{self.lane.road.name}:{self.lane.direction.name}:{self.lane.num}"
@@ -126,6 +128,7 @@ class CrossingSegment(Segment):
         self.length = BLOCK_SIZE
         self.horiz_num = None
         self.vert_num = None
+        self.max_speed = BLOCK_SIZE // 10
 
     def get_road(self, direction: Direction, opposite: bool = False):
         if horiz_direction[direction] and not opposite:
@@ -145,7 +148,7 @@ class Goal:
         self.update_position()
 
     def update_position(self):
-        mid_seg = (self.lane_segment.begin + self.lane_segment.end) / 2
-        self.pos = Point(mid_seg, self.lane_segment.lane.top + BLOCK_SIZE / 2) \
+        mid_seg = (self.lane_segment.begin + self.lane_segment.end) // 2
+        self.pos = Point(mid_seg, self.lane_segment.lane.top + BLOCK_SIZE // 2) \
             if self.lane_segment.lane.road.horizontal \
-            else Point(self.lane_segment.lane.top + BLOCK_SIZE / 2, mid_seg)
+            else Point(self.lane_segment.lane.top + BLOCK_SIZE // 2, mid_seg)
