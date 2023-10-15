@@ -5,18 +5,19 @@ from game_model.road_network import Road
 from gui.pyglet_gui import CarsWindow
 
 
-def main(players, roads):
+def main(players, roads, segmentation):
 
     game = AstarCarsGame(players=players, roads=roads)
     controllers = [AstarCarController(game=game, player=i) for i in range(players)]
 
-    CarsWindow(game, controllers)
+    CarsWindow(game, controllers, segmentation=segmentation)
 
 
 if __name__ == '__main__':
     fn = "cars_model_10"
 
-    players = 10
+    players = 26
+    segmentation = False
 
     road_bottom = Road("bottom", True, 0, 1, 0)
     road_right = Road("right", False, WINDOW_WIDTH - BLOCK_SIZE, 0, 1)
@@ -30,10 +31,11 @@ if __name__ == '__main__':
     road_v2 = Road("v2", False, 680, 3, 3)
     road_v3 = Road("v3", False, 1200, 2, 0)
 
-    # one_road = Road("r1", True, 400, 3, 3)
+    one_road = Road("r1", True, 400, 6, 0)
 
     roads = [road_top, road_bottom, road_left, road_right, road_h1, road_h2, road_h3, road_v1, road_v2, road_v3]
     # roads = [road_top, road_bottom, road_left, road_right, one_road]
 
     main(players=players,
-         roads=roads)
+         roads=roads,
+         segmentation=segmentation)

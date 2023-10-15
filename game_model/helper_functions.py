@@ -41,10 +41,10 @@ def create_random_car(segments: list[Segment], cars) -> Car:
                                   if isinstance(seg, LaneSegment) and
                                   not any([seg == car.res[0]["seg"] for car in cars])])
 
-    max_speed = random.randint(BLOCK_SIZE // 4, BLOCK_SIZE // 3)
+    max_speed = random.randint(BLOCK_SIZE // 4, BLOCK_SIZE // 2)
     speed = random.randint(BLOCK_SIZE // 10, max_speed)
 
-    size = BLOCK_SIZE // 2 + random.random() * BLOCK_SIZE
+    size = random.randint(BLOCK_SIZE // 2, 3 * BLOCK_SIZE // 2)
     loc = 0
 
     return Car(name=name,
@@ -143,3 +143,21 @@ def create_segments(roads: list[Road]):
                                 #     lane.segments[j - 1].up = lane.segments[j]
 
     return segments
+
+
+def collision_check(car: Car):
+    for segment in car.get_size_segments():
+        begin = abs(segment["begin"])
+        end = abs(segment["end"])
+        for other_car in segment["seg"].cars:
+            if other_car != car:
+                for other_seg in other_car.get_size_segments():
+                    if other_seg["seg"] == segment["seg"]:
+                        o_begin = abs(other_seg["begin"])
+                        o_end = abs(other_seg["end"])
+                        if begin < o_begin < end:
+                            return True
+                        elif begin < o_end < end:
+                            return True
+
+    return False

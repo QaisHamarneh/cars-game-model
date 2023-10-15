@@ -2,78 +2,12 @@ import pyglet
 from pyglet import shapes
 
 from game_model.constants import *
-from game_model.road_network import Direction, Point
-
-
-def _draw_dash_line(start, end, width=LANE_DISPLACEMENT, color=WHITE, dash=20):
-    lines = []
-    # Vertical
-    if start.x == end.x:
-        length = end.y - start.y
-        steps = length // dash
-        step_length = length // steps
-        for i in range(steps):
-            if i % 2 == 0:
-                lines.append(shapes.Line(start.x, start.y + i * step_length,
-                                         start.x, start.y + (i + 1) * step_length,
-                                         width, color=color))
-
-    # Horizontal
-    elif start.y == end.y:
-        length = end.x - start.x
-        steps = length // dash
-        step_length = length // steps
-        for i in range(steps):
-            if i % 2 == 0:
-                lines.append(shapes.Line(start.x + i * step_length, start.y,
-                                         start.x + (i + 1) * step_length, start.y,
-                                         width, color=color))
-    return lines
-
-
-def _draw_arrow(begin, end, horizontal, direction, tip=BLOCK_SIZE // 4, width=LANE_DISPLACEMENT, color=WHITE):
-    lines = []
-    if horizontal:
-        lines.append(shapes.Line(begin.x, begin.y,
-                                 end.x, end.y,
-                                 width, color=color))
-        if direction == Direction.RIGHT:
-            lines.append(shapes.Line(end.x, end.y,
-                                     end.x - tip, end.y - tip,
-                                     width, color=color))
-            lines.append(shapes.Line(end.x, end.y,
-                                     end.x - tip, end.y + tip,
-                                     width, color=color))
-        if direction == Direction.LEFT:
-            lines.append(shapes.Line(begin.x, begin.y,
-                                     begin.x + tip, begin.y - tip,
-                                     width, color=color))
-            lines.append(shapes.Line(begin.x, begin.y,
-                                     begin.x + tip, begin.y + tip,
-                                     width, color=color))
-    else:
-        lines.append(shapes.Line(begin.x, begin.y,
-                                 end.x, end.y,
-                                 width, color=color))
-        if direction == Direction.UP:
-            lines.append(shapes.Line(end.x, end.y,
-                                     end.x - tip, end.y - tip,
-                                     width, color=color))
-            lines.append(shapes.Line(end.x, end.y,
-                                     end.x + tip, end.y - tip,
-                                     width, color=color))
-        if direction == Direction.DOWN:
-            lines.append(shapes.Line(begin.x, begin.y,
-                                     begin.x - tip, begin.y + tip,
-                                     width, color=color))
-            lines.append(shapes.Line(begin.x, begin.y,
-                                     begin.x + tip, begin.y + tip,
-                                     width, color=color))
-    return lines
+from game_model.road_network import Direction, Point, LaneSegment, horiz_direction, true_direction
+from gui.helpful_functions import draw_arrow, draw_dash_line
 
 
 class CarsWindow(pyglet.window.Window):
-    def __init__(self, game, controllers, manual=False):
+    def __init__(self, game, controllers, segmentation=False, manual=False):
         super().__init__()
         self.set_size(WINDOW_WIDTH, WINDOW_HEIGHT)
         self.set_minimum_size(WINDOW_WIDTH, WINDOW_HEIGHT)
@@ -83,6 +17,7 @@ class CarsWindow(pyglet.window.Window):
 
         self.game = game
         self.controllers = controllers
+        self.segmentation = segmentation
         self.frames_count = 0
         self.manual = manual
 
@@ -124,7 +59,7 @@ class CarsWindow(pyglet.window.Window):
         for player in range(self.game.players):
             if not self.game_over[player]:
                 self.game_over[player], self.scores[player] = self.game.play_step(player,
-                                                                                 self.controllers[player].get_action())
+                                                                                  self.controllers[player].get_action())
         if all(self.game_over):
             print(f"Game Over:")
             for player in range(self.game.players):
@@ -139,34 +74,71 @@ class CarsWindow(pyglet.window.Window):
     def _update_cars(self):
         self.car_shapes = []
         for player, car in enumerate(self.game.cars):
-            self.car_shapes.append(shapes.Rectangle(
-                x=car.pos.x, y=car.pos.y,
-                width=car.w, height=car.h,
-                color=car.color if not car.dead else DEAD_GREY))
-            if car.res[0]["dir"] == Direction.RIGHT:
-                self.car_shapes.append(shapes.Triangle(car.pos.x + car.w, car.pos.y,
-                                                       car.pos.x + car.w, car.pos.y + car.h,
-                                                       car.pos.x + car.w + car.h // 6,
-                                                       car.pos.y + car.h // 2,
-                                                       car.color if not car.dead else DEAD_GREY))
-            elif car.res[0]["dir"] == Direction.LEFT:
-                self.car_shapes.append(shapes.Triangle(car.pos.x, car.pos.y,
-                                                       car.pos.x, car.pos.y + car.h,
-                                                       car.pos.x - car.h // 6,
-                                                       car.pos.y + car.h // 2,
-                                                       car.color if not car.dead else DEAD_GREY))
-            if car.res[0]["dir"] == Direction.UP:
-                self.car_shapes.append(shapes.Triangle(car.pos.x, car.pos.y + car.h,
-                                                       car.pos.x + car.w, car.pos.y + car.h,
-                                                       car.pos.x + car.w // 2,
-                                                       car.pos.y + car.h + car.w // 6,
-                                                       car.color if not car.dead else DEAD_GREY))
-            if car.res[0]["dir"] == Direction.DOWN:
-                self.car_shapes.append(shapes.Triangle(car.pos.x, car.pos.y,
-                                                       car.pos.x + car.w, car.pos.y,
-                                                       car.pos.x + car.w // 2,
-                                                       car.pos.y - car.w // 6,
-                                                       car.color if not car.dead else DEAD_GREY))
+            if self.segmentation:
+                for segment in car.get_size_segments():
+                    if isinstance(segment["seg"], LaneSegment):
+                        begin_x = segment["seg"].begin + segment["begin"] if segment["seg"].lane.road.horizontal \
+                            else segment["seg"].lane.top
+                        begin_y = segment["seg"].lane.top if segment["seg"].lane.road.horizontal \
+                            else segment["seg"].begin + segment["begin"]
+                        end_x = segment["seg"].begin + segment["end"] if segment["seg"].lane.road.horizontal \
+                            else segment["seg"].lane.top + BLOCK_SIZE
+                        end_y = segment["seg"].lane.top + BLOCK_SIZE if segment["seg"].lane.road.horizontal \
+                            else segment["seg"].begin + segment["end"]
+                    else:
+                        if true_direction[segment["dir"]]:
+                            begin_x = segment["seg"].vert_lane.top + segment["begin"] if horiz_direction[segment["dir"]] \
+                                else segment["seg"].vert_lane.top
+                            begin_y = segment["seg"].horiz_lane.top if horiz_direction[segment["dir"]] \
+                                else segment["seg"].horiz_lane.top + segment["begin"]
+                            end_x = segment["seg"].vert_lane.top + segment["end"] if horiz_direction[segment["dir"]] \
+                                else segment["seg"].vert_lane.top + BLOCK_SIZE
+                            end_y = segment["seg"].horiz_lane.top + BLOCK_SIZE if horiz_direction[segment["dir"]] \
+                                else segment["seg"].horiz_lane.top + segment["end"]
+                        else:
+                            begin_x = segment["seg"].vert_lane.top + BLOCK_SIZE + segment["begin"] if horiz_direction[segment["dir"]] \
+                                else segment["seg"].vert_lane.top
+                            begin_y = segment["seg"].horiz_lane.top if horiz_direction[segment["dir"]] \
+                                else segment["seg"].horiz_lane.top + BLOCK_SIZE + segment["begin"]
+                            end_x = segment["seg"].vert_lane.top + BLOCK_SIZE + segment["end"] if horiz_direction[segment["dir"]] \
+                                else segment["seg"].vert_lane.top + BLOCK_SIZE
+                            end_y = segment["seg"].horiz_lane.top + BLOCK_SIZE if horiz_direction[segment["dir"]] \
+                                else segment["seg"].horiz_lane.top + BLOCK_SIZE + segment["end"]
+
+                    self.car_shapes.append(shapes.Rectangle(
+                        x=min(begin_x, end_x), y=min(begin_y, end_y),
+                        width=abs(end_x - begin_x), height=abs(end_y - begin_y),
+                        color=car.color if not car.dead else DEAD_GREY))
+            else:
+                self.car_shapes.append(shapes.Rectangle(
+                    x=car.pos.x, y=car.pos.y,
+                    width=car.w, height=car.h,
+                    color=car.color if not car.dead else DEAD_GREY))
+
+                if car.res[0]["dir"] == Direction.RIGHT:
+                    self.car_shapes.append(shapes.Triangle(car.pos.x + car.w, car.pos.y,
+                                                           car.pos.x + car.w, car.pos.y + car.h,
+                                                           car.pos.x + car.w + car.h // 6,
+                                                           car.pos.y + car.h // 2,
+                                                           car.color if not car.dead else DEAD_GREY))
+                elif car.res[0]["dir"] == Direction.LEFT:
+                    self.car_shapes.append(shapes.Triangle(car.pos.x, car.pos.y,
+                                                           car.pos.x, car.pos.y + car.h,
+                                                           car.pos.x - car.h // 6,
+                                                           car.pos.y + car.h // 2,
+                                                           car.color if not car.dead else DEAD_GREY))
+                if car.res[0]["dir"] == Direction.UP:
+                    self.car_shapes.append(shapes.Triangle(car.pos.x, car.pos.y + car.h,
+                                                           car.pos.x + car.w, car.pos.y + car.h,
+                                                           car.pos.x + car.w // 2,
+                                                           car.pos.y + car.h + car.w // 6,
+                                                           car.color if not car.dead else DEAD_GREY))
+                if car.res[0]["dir"] == Direction.DOWN:
+                    self.car_shapes.append(shapes.Triangle(car.pos.x, car.pos.y,
+                                                           car.pos.x + car.w, car.pos.y,
+                                                           car.pos.x + car.w // 2,
+                                                           car.pos.y - car.w // 6,
+                                                           car.color if not car.dead else DEAD_GREY))
 
     def _update_goals(self):
         self.goal_shapes = []
@@ -193,12 +165,12 @@ class CarsWindow(pyglet.window.Window):
                                                         WINDOW_WIDTH, lane.top + BLOCK_SIZE,
                                                         LANE_DISPLACEMENT, color=WHITE))
                 elif i < len(road.right_lanes + road.left_lanes) - 1:
-                    dashed_lines = _draw_dash_line(Point(0, lane.top + BLOCK_SIZE),
-                                                   Point(WINDOW_WIDTH, lane.top + BLOCK_SIZE))
+                    dashed_lines = draw_dash_line(Point(0, lane.top + BLOCK_SIZE),
+                                                  Point(WINDOW_WIDTH, lane.top + BLOCK_SIZE))
                     for line in dashed_lines:
                         self.road_shapes.append(line)
-                arrow = _draw_arrow(Point(1.5 * BLOCK_SIZE, lane.top + BLOCK_SIZE // 2),
-                                    Point(3 * BLOCK_SIZE, lane.top + BLOCK_SIZE // 2), True, lane.direction)
+                arrow = draw_arrow(Point(1.5 * BLOCK_SIZE, lane.top + BLOCK_SIZE // 2),
+                                   Point(3 * BLOCK_SIZE, lane.top + BLOCK_SIZE // 2), True, lane.direction)
                 for line in arrow:
                     self.road_shapes.append(line)
             else:
@@ -207,11 +179,11 @@ class CarsWindow(pyglet.window.Window):
                                                         lane.top + BLOCK_SIZE, WINDOW_HEIGHT,
                                                         color=WHITE))
                 elif i < len(road.right_lanes + road.left_lanes) - 1:
-                    dashed_lines = _draw_dash_line(Point(lane.top + BLOCK_SIZE, 0),
-                                                   Point(lane.top + BLOCK_SIZE, WINDOW_HEIGHT))
+                    dashed_lines = draw_dash_line(Point(lane.top + BLOCK_SIZE, 0),
+                                                  Point(lane.top + BLOCK_SIZE, WINDOW_HEIGHT))
                     for line in dashed_lines:
                         self.road_shapes.append(line)
-                arrow = _draw_arrow(Point(lane.top + BLOCK_SIZE // 2, 1.5 * BLOCK_SIZE),
-                                    Point(lane.top + BLOCK_SIZE // 2, 3 * BLOCK_SIZE), False, lane.direction)
+                arrow = draw_arrow(Point(lane.top + BLOCK_SIZE // 2, 1.5 * BLOCK_SIZE),
+                                   Point(lane.top + BLOCK_SIZE // 2, 3 * BLOCK_SIZE), False, lane.direction)
                 for line in arrow:
                     self.road_shapes.append(line)

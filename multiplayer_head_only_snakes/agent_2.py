@@ -3,7 +3,7 @@ import torch
 import random
 import numpy as np
 from collections import deque
-from learning_agent.nn import LinearQNet, QTrainer
+from model_2 import Linear_QNet, QTrainer
 from snake_game_ai_2 import SnakeGameAI2
 
 MAX_MEMORY = 100_000
@@ -27,7 +27,7 @@ class Agent:
         self.gamma = 0.99  # discount rate
         self.state_size = len(game.get_state(player))
         self.memory = deque(maxlen=MAX_MEMORY)  # popleft()
-        self.model = LinearQNet(
+        self.model = Linear_QNet(
             self.player, self.state_size, 256, self.n_actions)
 
         if eval:
