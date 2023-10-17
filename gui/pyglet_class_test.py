@@ -5,6 +5,7 @@ from game_model.constants import *
 from game_model.helper_functions import create_segments
 from game_model.road_network import Direction, Point, LaneSegment, CrossingSegment, true_direction, Road
 from gui.colors import colors
+from gui.helpful_functions import draw_dash_line, draw_arrow
 
 
 class CarsWindowTest(pyglet.window.Window):
@@ -122,44 +123,28 @@ class CarsWindowTest(pyglet.window.Window):
                                                         WINDOW_WIDTH, lane.top + BLOCK_SIZE,
                                                         LANE_DISPLACEMENT, color=WHITE))
                 elif i < len(road.right_lanes + road.left_lanes) - 1:
-                    self._draw_dash_line(WHITE,
-                                         Point(0, lane.top + BLOCK_SIZE),
-                                         Point(WINDOW_WIDTH, lane.top + BLOCK_SIZE),
-                                         width=LANE_DISPLACEMENT)
+                    dashed_lines = draw_dash_line(Point(0, lane.top + BLOCK_SIZE),
+                                                  Point(WINDOW_WIDTH, lane.top + BLOCK_SIZE))
+                    for line in dashed_lines:
+                        self.road_shapes.append(line)
+                arrow = draw_arrow(Point(1.5 * BLOCK_SIZE, lane.top + BLOCK_SIZE // 2),
+                                   Point(3 * BLOCK_SIZE, lane.top + BLOCK_SIZE // 2), True, lane.direction)
+                for line in arrow:
+                    self.road_shapes.append(line)
             else:
                 if i == len(road.right_lanes) - 1 and len(road.left_lanes) > 0:
                     self.road_shapes.append(shapes.Line(lane.top + BLOCK_SIZE, 0,
-                                                        lane.top + BLOCK_SIZE,
-                                                        WINDOW_HEIGHT, LANE_DISPLACEMENT,
+                                                        lane.top + BLOCK_SIZE, WINDOW_HEIGHT,
                                                         color=WHITE))
                 elif i < len(road.right_lanes + road.left_lanes) - 1:
-                    self._draw_dash_line(WHITE,
-                                         Point(lane.top + BLOCK_SIZE, 0),
-                                         Point(lane.top + BLOCK_SIZE, WINDOW_HEIGHT),
-                                         width=LANE_DISPLACEMENT)
-
-    def _draw_dash_line(self, color1, start, end, width, dash=20):
-        # Vertical
-        if start.x == end.x:
-            length = end.y - start.y
-            steps = length // dash
-            step_length = length // steps
-            for i in range(steps):
-                if i % 2 == 0:
-                    self.road_shapes.append(shapes.Line(start.x, start.y + i * step_length,
-                                                        start.x, start.y + (i + 1) * step_length,
-                                                        width, color=color1))
-
-        # Horizontal
-        elif start.y == end.y:
-            length = end.x - start.x
-            steps = length // dash
-            step_length = length // steps
-            for i in range(steps):
-                if i % 2 == 0:
-                    self.road_shapes.append(shapes.Line(start.x + i * step_length, start.y,
-                                                        start.x + (i + 1) * step_length, start.y,
-                                                        width, color=color1))
+                    dashed_lines = draw_dash_line(Point(lane.top + BLOCK_SIZE, 0),
+                                                  Point(lane.top + BLOCK_SIZE, WINDOW_HEIGHT))
+                    for line in dashed_lines:
+                        self.road_shapes.append(line)
+                arrow = draw_arrow(Point(lane.top + BLOCK_SIZE // 2, 1.5 * BLOCK_SIZE),
+                                   Point(lane.top + BLOCK_SIZE // 2, 3 * BLOCK_SIZE), False, lane.direction)
+                for line in arrow:
+                    self.road_shapes.append(line)
 
 
 if __name__ == '__main__':

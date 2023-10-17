@@ -2,7 +2,7 @@ import pyglet
 from pyglet import shapes
 
 from game_model.constants import *
-from game_model.game_model import AstarCarsGame
+from game_model.game_model import TrafficEnv
 from game_model.road_network import Direction, Point, LaneSegment, Road
 from gui.helpful_functions import draw_arrow, draw_dash_line
 
@@ -183,6 +183,6 @@ if __name__ == '__main__':
     roads = [road_top, road_bottom, road_left, road_right, road_h1, road_h2, road_h3, road_v1, road_v2, road_v3]
     # roads = [road_top, road_bottom, road_left, road_right, one_road]
     players = 1
-    game = AstarCarsGame(players=players, roads=roads)
+    game = TrafficEnv(players=players, roads=roads)
 
     CarsWindowManual(game)

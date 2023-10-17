@@ -1,10 +1,10 @@
 from controller.helper_functions import astar_heuristic, reconstruct_path
-from game_model.game_model import AstarCarsGame
+from game_model.game_model import TrafficEnv
 from game_model.road_network import LaneSegment, CrossingSegment, Segment
 
 
 class AstarCarController:
-    def __init__(self, game: AstarCarsGame, player: int):
+    def __init__(self, game: TrafficEnv, player: int):
         self.game = game
         self.player = player
 
@@ -26,7 +26,9 @@ class AstarCarController:
             if dir_diff == 3:
                 dir_diff = 2
 
-        elif isinstance(self.car.res[0]["seg"], LaneSegment) and acceleration < 1 and len(self.car.res) == 1:
+        elif isinstance(self.car.res[0]["seg"], LaneSegment) \
+                and acceleration < 1 and len(self.car.res) == 1 \
+                and self.car.res[0]["seg"] != self.game.goals[self.player].lane_segment:
             right_lane = self.car.get_adjacent_lane_segment(-1)
             if right_lane is not None:
                 right_lane_acceleration = self.get_accelerate([{
@@ -117,7 +119,7 @@ class AstarCarController:
 
         # seg = extended_segments[-1]
         for seg in extended_segments:
-            priority = seg["seg"].cars.index(self.car) if self.car in seg["seg"].cars else 1
+            priority = seg["seg"].cars.index(self.car) if self.car in seg["seg"].cars else len(seg["seg"].cars)
             match seg["seg"]:
                 case LaneSegment():
                     if priority > 0 and len(seg["seg"].cars) > 0:

@@ -6,7 +6,7 @@ from game_model.helper_functions import create_random_car, overlap, create_segme
 from game_model.constants import *
 
 
-class AstarCarsGame:
+class TrafficEnv:
     def __init__(self, roads: list[Road], players: int, cars: list[Car] = None):
         super().__init__()
         self.roads = roads

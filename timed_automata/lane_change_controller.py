@@ -2,10 +2,10 @@ from game_model.constants import *
 from game_model.road_network import LaneSegment
 from timed_automata.timed_automata_classes import TimedAutomata, State, Transition
 
-from game_model.game_model import AstarCarsGame
+from game_model.game_model import TrafficEnv
 
 
-def collision_check(game: AstarCarsGame, player: int):
+def collision_check(game: TrafficEnv, player: int):
     car = game.cars[player]
     segment = car.res[0]
     seg_info = car.get_segment_info(segment)
@@ -23,7 +23,7 @@ def collision_check(game: AstarCarsGame, player: int):
     return True
 
 
-def potential_collision_check(game: AstarCarsGame, player: int, lane_diff: int):
+def potential_collision_check(game: TrafficEnv, player: int, lane_diff: int):
     car = game.cars[player]
     segment = car.get_adjacent_lane_segment(lane_diff)
     if segment is None:
@@ -49,17 +49,17 @@ def potential_collision_check(game: AstarCarsGame, player: int, lane_diff: int):
     return True
 
 
-def pc1(game: AstarCarsGame, player: int):
+def pc1(game: TrafficEnv, player: int):
     return potential_collision_check(game, player, 1)
 
 
-def pc2(game: AstarCarsGame, player: int):
+def pc2(game: TrafficEnv, player: int):
     return potential_collision_check(game, player, -1)
 
 
 class LaneChangeController:
     def __init__(self,
-                 game: AstarCarsGame,
+                 game: TrafficEnv,
                  player: int):
         self.game = game
         self.player = player
@@ -113,5 +113,5 @@ class LaneChangeController:
     def l_2(self):
         self.variables['l'] = -1
 
-    def pc(self, game: AstarCarsGame, player: int):
+    def pc(self, game: TrafficEnv, player: int):
         return potential_collision_check(game, player, self.variables['l'])

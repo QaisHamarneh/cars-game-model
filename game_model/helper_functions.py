@@ -33,9 +33,9 @@ def reached_goal(car: Car, goal: Goal):
 
 
 def create_random_car(segments: list[Segment], cars) -> Car:
-    name = random.choice([char for char in string.ascii_uppercase if not any([car.name == char for car in cars])])
-    color = random.choice([color for color in colors.values()
-                           if not any([car.color == color for car in cars])])
+    name = random.choice([color for color in colors.keys()
+                          if not any([car.name == color for car in cars])])
+    color = colors[name]
 
     lane_segment = random.choice([seg for seg in segments
                                   if isinstance(seg, LaneSegment) and

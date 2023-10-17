@@ -1,13 +1,13 @@
 from typing import Callable
 
-from game_model.game_model import AstarCarsGame
+from game_model.game_model import TrafficEnv
 
 
 class State:
     def __init__(self,
                  name: str,
                  time_invariants: list[Callable[[list[int]], bool]] = None,
-                 game_invariants: list[Callable[[AstarCarsGame, int], bool]] = None,
+                 game_invariants: list[Callable[[TrafficEnv, int], bool]] = None,
                  transitions: list = None):
         self.name = name
         self.time_invariants = []
@@ -20,7 +20,7 @@ class State:
         if transitions is not None:
             self.transitions = transitions
 
-    def valid(self, game: AstarCarsGame, player: int, clocks: list[int]):
+    def valid(self, game: TrafficEnv, player: int, clocks: list[int]):
         valid_time = all([invariant(clocks) for invariant in self.time_invariants])
         valid_game = all([invariant(game, player) for invariant in self.game_invariants])
         return valid_time and valid_game
@@ -32,7 +32,7 @@ class Transition:
                  end: State,
                  reset: list[int],
                  time_guards: list[Callable[[list[int]], bool]] = None,
-                 game_guards: list[Callable[[AstarCarsGame, int], bool]] = None,
+                 game_guards: list[Callable[[TrafficEnv, int], bool]] = None,
                  updates: list[Callable[[], None]] = None):
         self.start = start
         self.end = end
@@ -47,7 +47,7 @@ class Transition:
         if updates is not None:
             self.updates = updates
 
-    def enabled(self, game: AstarCarsGame, player: int, clocks: list[int]):
+    def enabled(self, game: TrafficEnv, player: int, clocks: list[int]):
         time_guards_enabled = all([guard(clocks) for guard in self.time_guards])
         game_guards_enabled = all([guard(game, player) for guard in self.game_guards])
         new_clocks = clocks.copy()
@@ -59,7 +59,7 @@ class Transition:
 
 class TimedAutomata:
     def __init__(self,
-                 game: AstarCarsGame,
+                 game: TrafficEnv,
                  player: int,
                  states: list[State],
                  start_state: State,

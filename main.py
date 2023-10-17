@@ -1,13 +1,13 @@
 from game_model.constants import *
 from controller.astar_car_controller import AstarCarController
-from game_model.game_model import AstarCarsGame
+from game_model.game_model import TrafficEnv
 from game_model.road_network import Road
 from gui.pyglet_gui import CarsWindow
 
 
 def main(players, roads, segmentation):
 
-    game = AstarCarsGame(players=players, roads=roads)
+    game = TrafficEnv(players=players, roads=roads)
     controllers = [AstarCarController(game=game, player=i) for i in range(players)]
 
     CarsWindow(game, controllers, segmentation=segmentation)
@@ -16,7 +16,7 @@ def main(players, roads, segmentation):
 if __name__ == '__main__':
     fn = "cars_model_10"
 
-    players = 26
+    players = 50
     segmentation = False
 
     road_bottom = Road("bottom", True, 0, 1, 0)
